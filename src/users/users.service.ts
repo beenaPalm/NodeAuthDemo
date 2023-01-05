@@ -1,16 +1,21 @@
-import { Injectable, UseFilters } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
-import { TableName, formatResponse } from 'src/constants/app.constants';
-import { CreateUsersDto } from './dtos/create_users.dto';
-import * as bcrypt from 'bcrypt';
+import { getSecurePassword, StatusCode, TableName } from 'src/constants/app.constants';
+import { LoginUsersDto } from './dtos/login_users.dto';
 import { QueryRunner } from 'typeorm';
+import { UsersQueries } from './users.queries';
+import { AppResponseDto } from '../constants/response.dto';
+import { AppMessages } from '../constants/app.messages';
+
+import { CreateUsersDto } from './dtos/create_users.dto';
 
 
 
 @Injectable()
 export class UsersService {
 
-    constructor(private databaseService: DatabaseService) { }
+    constructor(private userQueries: UsersQueries, private databaseService: DatabaseService) { }
+
 
 
     async createUser(createUsersDto: CreateUsersDto) {
@@ -21,12 +26,10 @@ export class UsersService {
         valueUser = valueUser.map(i => "'" + i + "'");
 
 
+        const hashPassword = await getSecurePassword(createUsersDto.password)
+
         let keysPassword = ['password']
-
-        const saltOrRounds = 10;
-        const hash = await bcrypt.hash(createUsersDto.password, saltOrRounds);
-
-        let valuePassword = [hash]
+        let valuePassword = [hashPassword]
 
         let keysDevice = ['device_uniqueid', 'device_type', 'device_os_version', 'device_company']
         let valueDevice = [createUsersDto.device_uniqueid,
@@ -35,7 +38,13 @@ export class UsersService {
         createUsersDto.device_company]
         valueDevice = valueDevice.map(i => "'" + i + "'");
 
+        let emailRegistered: Boolean = await this.userQueries.queryUserEMailCheck(createUsersDto.email)
+        if (emailRegistered) {
 
+            return new AppResponseDto(StatusCode.Status_Show_Error,
+                AppMessages.Msg_Err_Reg_Email_Already_Registerd,
+                null)
+        }
         let queryRunner: QueryRunner = await this.databaseService.queryStartTrasaction()
 
         try {
@@ -50,17 +59,29 @@ export class UsersService {
             await this.databaseService.queryInsert(queryRunner, TableName.Table_Passport,
                 keysPassword.join(','), valuePassword.join(','))
 
-            await this.databaseService.queryInsert(queryRunner, TableName.Table_Devices_Info,
-                keysDevice.join(','), valueDevice.join(','))
 
+            var deviceId = await this.userQueries.queryUserDeviceCheck(queryRunner, createUsersDto)
+            if (deviceId == 0) {
+                let resDevice = await this.databaseService.queryInsert(queryRunner, TableName.Table_Devices_Info,
+                    keysDevice.join(','), valueDevice.join(','))
+                deviceId = res.insertId
+            }
+
+            await this.userQueries.queryUserSessionUpdate(queryRunner, createUsersDto, res.insertId, deviceId)
+
+            return new AppResponseDto(StatusCode.Status_Show_Error,
+                AppMessages.Msg_Err_Try_Again,
+                null)
             await this.databaseService.queryCommitTransaction(queryRunner)
 
             let queryString = {}
             queryString['id_users'] = res.insertId
-            let userInfo = await this.databaseService.querySelectSingleRow(TableName.Table_Users,
+            let userInfo = await this.userQueries.querySelectSingleRow(TableName.Table_Users,
                 queryString)
-            return formatResponse(200,
-                'Sucessfully regsitered user!!',
+
+
+            return new AppResponseDto(StatusCode.Status_Success,
+                AppMessages.Msg_Succ_Regsiter,
                 userInfo)
 
 
@@ -73,17 +94,18 @@ export class UsersService {
             await this.databaseService.queryReleaseQueryRunner(queryRunner)
         }
 
-        return formatResponse(201,
-            'Please try again!!',
+        return new AppResponseDto(StatusCode.Status_Show_Error,
+            AppMessages.Msg_Err_Try_Again,
             null)
 
     }
     async getAllUsers() {
 
-        let res = await this.databaseService.querySelectAll(TableName.Table_Users)
+        let res = await this.userQueries.querySelectAll(TableName.Table_Users)
 
-        return formatResponse(200,
-            'Sucessfully fetched users',
+
+        return new AppResponseDto(StatusCode.Status_Success,
+            AppMessages.Msg_Succ_Users,
             res)
     }
 
@@ -92,10 +114,33 @@ export class UsersService {
         var queryString = {}
         queryString['id_users'] = userId
 
-        let res = await this.databaseService.querySelectSingleRow(TableName.Table_Users, queryString)
-        return formatResponse(200,
-            'Sucessfully fetched users',
+        let res = await this.userQueries.querySelectSingleRow(TableName.Table_Users, queryString)
+        return new AppResponseDto(StatusCode.Status_Success,
+            AppMessages.Msg_Succ_Users,
             res)
+
+    }
+
+    async loginUser(loginUser: LoginUsersDto) {
+
+        let password = await getSecurePassword(loginUser.password)
+
+        loginUser.password = password
+        let res = await this.userQueries.queryLoginInfoCheck(loginUser)
+
+        if (res && res.length > 0) {
+            return new AppResponseDto(StatusCode.Status_Success,
+                AppMessages.Msg_Succ_Login,
+                res)
+
+        }
+        else {
+            return new AppResponseDto(StatusCode.Status_Show_Error,
+                AppMessages.Msg_Err_Login,
+                res)
+
+        }
+
 
     }
 }

@@ -1,5 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpException, HttpStatus, Param, ParseIntPipe, Post, Req, Res, UseFilters } from '@nestjs/common';
+import { LoginUsersDto } from './dtos/login_users.dto';
 import { CreateUsersDto } from './dtos/create_users.dto';
+
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -26,6 +28,12 @@ export class UsersController {
         return this.userService.getUserInfo(id);
     }
 
+    @Post('/login')
+    @HttpCode(200)
+    async loginUser(@Body() loginUser: LoginUsersDto) {
+        return this.userService.loginUser(loginUser);
+
+    }
 
 
 }

@@ -1,4 +1,5 @@
 
+import * as bcrypt from 'bcrypt';
 
 export enum TableName {
     Table_Users = "users",
@@ -10,18 +11,16 @@ export enum TableName {
 }
 
 
-
-export enum ResponseKey {
-    Res_Status = "statusCode",
-    Res_Message = "message",
-    Res_Data = "data"
+export enum StatusCode {
+    Status_Success = 200,
+    Status_Show_Error = 201,
 }
 
 
-export function formatResponse(statusCode: Number, message: string, data: Object) {
-    let response = {}
-    response[ResponseKey.Res_Status] = statusCode
-    response[ResponseKey.Res_Message] = message
-    response[ResponseKey.Res_Data] = data
-    return response
+
+export async function getSecurePassword(password: string) {
+
+    const saltOrRounds = 10;
+    const hash = await bcrypt.hash(password, saltOrRounds);
+    return hash
 }

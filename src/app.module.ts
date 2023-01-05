@@ -2,9 +2,9 @@ import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/c
 import { UsersModule } from './users/users.module';
 import { LoggerMiddleware } from './logger/logger.middleware';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import { DatabaseService } from './database/database.service';
 import { ConfigModule } from '@nestjs/config';
+import { DatabaseService } from './database/database.service';
+
 
 @Module({
   imports: [
@@ -23,12 +23,8 @@ import { ConfigModule } from '@nestjs/config';
       synchronize: true,
     }),
   ],
-  providers: [DatabaseService]
-
 })
 export class AppModule implements NestModule {
-
-
   configure(consumer: MiddlewareConsumer) {
 
     consumer.
