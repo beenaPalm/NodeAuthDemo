@@ -1,0 +1,45 @@
+{
+  "apps": [
+    {
+      "name": "Demo_API",
+      "script": "src/main.ts",
+      "args": "start",
+      "exec_interpreter": "node",
+      "node_args": [
+        "--harmony",
+        "--expose-gc",
+        "--max-old-space-size=8192"
+      ],
+      "log_date_format": "YYYY-MM-DD HH:mm Z",
+      "error_file": "../log/error.log",
+      "out_file": "../log/info.log",
+      "instances": 1,
+      "min_uptime": "2000s",
+      "max_restarts": 200,
+      "max_memory_restart": "2G",
+      "watch": [
+        "src/**",
+        "*"
+      ],
+      "ignore_watch": [
+        "[\\/\\\\]\\./",
+        "node_modules"
+      ],
+      "merge_logs": true,
+      "exec_mode": "cluster",
+      "autorestart": true,
+      "env": {
+        "PORT": 3041,
+        "NODE_ENV": "development"
+      },
+      "env_staging": {
+        "PORT": 3042,
+        "NODE_ENV": "development"
+      },
+      "env_production": {
+        "PORT": 5000,
+        "NODE_ENV": "development"
+      }
+    }
+  ]
+}

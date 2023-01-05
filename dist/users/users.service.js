@@ -1,0 +1,75 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UsersService = void 0;
+const common_1 = require("@nestjs/common");
+const database_service_1 = require("../database/database.service");
+const app_constants_1 = require("../constants/app.constants");
+const bcrypt = require("bcrypt");
+let UsersService = class UsersService {
+    constructor(databaseService) {
+        this.databaseService = databaseService;
+    }
+    async createUser(createUsersDto) {
+        let keysUser = ['email', 'user_name', 'date_of_birth'];
+        let valueUser = [createUsersDto.email,
+            createUsersDto.user_name,
+            createUsersDto.date_of_birth];
+        valueUser = valueUser.map(i => "'" + i + "'");
+        let keysPassword = ['password'];
+        const saltOrRounds = 10;
+        const hash = await bcrypt.hash(createUsersDto.password, saltOrRounds);
+        let valuePassword = [hash];
+        let keysDevice = ['device_uniqueid', 'device_type', 'device_os_version', 'device_company'];
+        let valueDevice = [createUsersDto.device_uniqueid,
+            createUsersDto.device_type,
+            createUsersDto.device_os_version,
+            createUsersDto.device_company];
+        valueDevice = valueDevice.map(i => "'" + i + "'");
+        let queryRunner = await this.databaseService.queryStartTrasaction();
+        try {
+            let res = await this.databaseService.queryInsert(queryRunner, app_constants_1.TableName.Table_Users, keysUser.join(','), valueUser.join(','));
+            keysPassword = ['id_users', ...keysPassword];
+            valuePassword = [res.insertId, ...valuePassword];
+            valuePassword = valuePassword.map(i => "'" + i + "'");
+            await this.databaseService.queryInsert(queryRunner, app_constants_1.TableName.Table_Passport, keysPassword.join(','), valuePassword.join(','));
+            await this.databaseService.queryInsert(queryRunner, app_constants_1.TableName.Table_Devices_Info, keysDevice.join(','), valueDevice.join(','));
+            await this.databaseService.queryCommitTransaction(queryRunner);
+            let queryString = {};
+            queryString['id_users'] = res.insertId;
+            let userInfo = await this.databaseService.querySelectSingleRow(app_constants_1.TableName.Table_Users, queryString);
+            return (0, app_constants_1.formatResponse)(200, 'Sucessfully regsitered user!!', userInfo);
+        }
+        catch (err) {
+            await this.databaseService.queryRollBackTransaction(queryRunner);
+        }
+        finally {
+            await this.databaseService.queryReleaseQueryRunner(queryRunner);
+        }
+        return (0, app_constants_1.formatResponse)(201, 'Please try again!!', null);
+    }
+    async getAllUsers() {
+        let res = await this.databaseService.querySelectAll(app_constants_1.TableName.Table_Users);
+        return (0, app_constants_1.formatResponse)(200, 'Sucessfully fetched users', res);
+    }
+    async getUserInfo(userId) {
+        var queryString = {};
+        queryString['id_users'] = userId;
+        let res = await this.databaseService.querySelectSingleRow(app_constants_1.TableName.Table_Users, queryString);
+        return (0, app_constants_1.formatResponse)(200, 'Sucessfully fetched users', res);
+    }
+};
+UsersService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [database_service_1.DatabaseService])
+], UsersService);
+exports.UsersService = UsersService;
+//# sourceMappingURL=users.service.js.map
