@@ -1,9 +1,8 @@
-import { ConsoleLogger, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { TableName } from '../../src/constants/app.constants';
 import { DatabaseService } from '../../src/database/database.service';
 import { QueryRunner } from 'typeorm';
-import { CreateUsersDto } from './dtos/create_users.dto';
-import { LoginUsersDto } from './dtos/login_users.dto';
+import { LoginUsersDto } from '../users/dtos/login_users.dto';
 
 
 
@@ -41,9 +40,7 @@ export class UsersQueries {
 
         let passQuery = "SELECT u.*,p.password FROM " + TableName.Table_Users + " u  LEFT JOIN "
             + TableName.Table_Passport + " p ON p.id_users = u.id_users AND p.login_type ='" +
-            loginUser.login_type + "'  WHERE u.email='" + loginUser.email + "'";
-
-        console.log(passQuery);
+            loginUser.login_type + "'  WHERE u.email='" + loginUser.email + "' AND u.user_status=1";
 
         try {
             const result = await queryRunner.query(passQuery);
@@ -53,6 +50,8 @@ export class UsersQueries {
             if (err.code == 'ER_DUP_ENTRY') {
 
             }
+            return []
+
         }
     };
 
@@ -92,17 +91,15 @@ export class UsersQueries {
 
     };
 
-    async queryUserSessionUpdate(queryRunner: QueryRunner, userId: Number, deviceId: Number) {
+    async queryUserSessionUpdate(queryRunner: QueryRunner, refreshToken: string, accessToken: string, userId: Number, deviceId: Number) {
 
-        let refresh_token = (Math.random() + 1).toString(36).substring(7);
-
-        let keysDevice = ['id_users', 'id_devices', 'refresh_token']
-        let valueDevice = [userId, deviceId, refresh_token]
+        let keysDevice = ['id_users', 'id_devices', 'refresh_token', 'access_token']
+        let valueDevice = [userId, deviceId, refreshToken, accessToken]
         valueDevice = valueDevice.map(i => "'" + i + "'");
 
         let queryInsert = "INSERT INTO " + TableName.Table_User_Session + " (" + keysDevice.join(',') + ") VALUES (" +
             valueDevice.join(',')
-            + ")  ON DUPLICATE KEY UPDATE  refresh_token='" + refresh_token + "'"
+            + ")  ON DUPLICATE KEY UPDATE  refresh_token='" + refreshToken + "' , access_token='" + accessToken + "'"
 
         const result = await queryRunner.query(queryInsert);
 

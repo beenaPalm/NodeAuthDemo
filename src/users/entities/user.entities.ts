@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
 
 export class Users {
     @ApiProperty({ example: '1', description: 'Looged in user id' })
@@ -17,5 +18,11 @@ export class Users {
 
     @ApiProperty({ example: 'APP_USER', description: 'Role of user' })
     role: string = 'APP_USER';
+
+    @IsString()
+    refresh_token: string = '';
+
+    @IsString()
+    access_token: string = '';
 
 }

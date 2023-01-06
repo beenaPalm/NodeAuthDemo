@@ -27,7 +27,18 @@ export async function getSecurePassword(password: string) {
 
 
 // compare password
-export async function comparePassword(plaintextPassword, passwordHash) {
+export async function comparePassword(plaintextPassword: string, passwordHash: string) {
     const result = await bcrypt.compare(plaintextPassword, passwordHash);
+    return result;
+}
+
+export async function generateRefreshToken(length: Number) {
+
+    var result: string = '';
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for (var i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
     return result;
 }

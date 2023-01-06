@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../src/database/database.service';
-import { comparePassword, getSecurePassword, StatusCode, TableName } from '../../src/constants/app.constants';
+import { comparePassword, generateRefreshToken, getSecurePassword, StatusCode, TableName } from '../../src/constants/app.constants';
 import { LoginUsersDto } from './dtos/login_users.dto';
 import { QueryRunner } from 'typeorm';
 import { UsersQueries } from './users.queries';
@@ -15,8 +15,6 @@ import { Users } from './entities/user.entities';
 export class UsersService {
 
     constructor(private userQueries: UsersQueries, private databaseService: DatabaseService) { }
-
-
 
     async createUser(createUsersDto: CreateUsersDto) {
         let keysUser = ['email', 'user_name', 'date_of_birth']
@@ -54,7 +52,7 @@ export class UsersService {
 
 
             //Update device info of new login for multiple device handling purpose
-            await this.updateDeviceSpecificUserInformation(queryRunner,
+            let responseToken = await this.updateDeviceSpecificUserInformation(queryRunner,
                 createUsersDto.device_uniqueid, createUsersDto.device_type, createUsersDto.device_os_version,
                 createUsersDto.device_company, res.insertId)
 
@@ -66,7 +64,9 @@ export class UsersService {
             let userInfo = await this.userQueries.querySelectSingleRow(TableName.Table_Users,
                 queryString)
 
-            let arrayResponse: Users[] = <Users[]>JSON.parse(userInfo)
+            let arrayResponse: Users[] = userInfo
+            arrayResponse[0].refresh_token = responseToken.refresh_token
+            arrayResponse[0].access_token = responseToken.access_token
 
             return new AppResponseDto(StatusCode.Status_Success,
                 AppMessages.Msg_Succ_Regsiter,
@@ -118,13 +118,20 @@ export class UsersService {
                 delete res[0].password
 
                 //Update device info of new login for multiple device handling purpose
-                await this.updateDeviceSpecificUserInformation(queryRunner,
+                let responseToken = await this.updateDeviceSpecificUserInformation(queryRunner,
                     loginUser.device_uniqueid, loginUser.device_type, loginUser.device_os_version,
                     loginUser.device_company, res[0].id_users)
                 await this.databaseService.queryReleaseQueryRunner(queryRunner)
+
+
+                let arrayResponse: Users[] = res
+                arrayResponse[0].refresh_token = responseToken.refresh_token
+                arrayResponse[0].access_token = responseToken.access_token
+
                 return new AppResponseDto(StatusCode.Status_Success,
                     AppMessages.Msg_Succ_Login,
-                    res)
+                    arrayResponse)
+
             }
             else {
                 await this.databaseService.queryReleaseQueryRunner(queryRunner)
@@ -141,8 +148,6 @@ export class UsersService {
                 [])
 
         }
-
-
     }
 
     async updateDeviceSpecificUserInformation(queryRunner: QueryRunner,
@@ -168,8 +173,11 @@ export class UsersService {
             deviceId = resDevice.insertId
         }
 
-        await this.userQueries.queryUserSessionUpdate(queryRunner, userId, deviceId)
+        let refreshToken: string = await generateRefreshToken(10);
+        let accessToken: string = await generateRefreshToken(25);
 
+        await this.userQueries.queryUserSessionUpdate(queryRunner, refreshToken, accessToken, userId, deviceId)
+        return { 'access_token': accessToken, 'refresh_token': refreshToken }
     }
 
 }
