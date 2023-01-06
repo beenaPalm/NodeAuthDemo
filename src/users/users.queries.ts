@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { TableName } from 'src/constants/app.constants';
-import { DatabaseService } from 'src/database/database.service';
+import { ConsoleLogger, Injectable } from '@nestjs/common';
+import { TableName } from '../../src/constants/app.constants';
+import { DatabaseService } from '../../src/database/database.service';
 import { QueryRunner } from 'typeorm';
 import { CreateUsersDto } from './dtos/create_users.dto';
 import { LoginUsersDto } from './dtos/login_users.dto';
@@ -40,11 +40,10 @@ export class UsersQueries {
 
 
         const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
-        let passQuery = "SELECT u.* FROM " + TableName.Table_Users + " u  LEFT JOIN "
+        let passQuery = "SELECT u.*,p.password FROM " + TableName.Table_Users + " u  LEFT JOIN "
             + TableName.Table_Passport + " p ON p.id_users = p.id_users AND p.login_type ='" +
-            loginUser.login_type + "'  WHERE u.email='" + loginUser.email + "' AND p.password = '" + loginUser.password + "'";
+            loginUser.login_type + "'  WHERE u.email='" + loginUser.email + "'";
 
-        console.log(passQuery)
         try {
             const result = await queryRunner.query(passQuery);
             return result
@@ -102,8 +101,7 @@ export class UsersQueries {
 
         let queryInsert = "INSERT INTO " + TableName.Table_User_Session + " (" + keysDevice.join(',') + ") VALUES (" +
             valueDevice.join(',')
-            + ")  ON DUPLICATE KEY UPDATE SET refresh_token='" + refresh_token + "' WHERE id_users=" + userId + " AND " +
-            " id_devices=" + deviceId
+            + ")  ON DUPLICATE KEY UPDATE  refresh_token='" + refresh_token + "'"
         console.log(queryInsert);
 
         const result = await queryRunner.query(queryInsert);

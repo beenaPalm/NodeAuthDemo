@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { TableName } from 'src/constants/app.constants';
 import { DataSource, QueryRunner } from 'typeorm';
 
 
@@ -38,7 +37,6 @@ export class DatabaseService {
 
     async queryInsert(queryRunner: QueryRunner, tableName: string, keys: string, values: string) {
         let queryStr = "INSERT INTO " + tableName + "(" + keys + ") values (" + values + ")";
-
         const result = await queryRunner.query(queryStr);
         return result
 

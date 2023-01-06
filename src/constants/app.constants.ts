@@ -24,3 +24,10 @@ export async function getSecurePassword(password: string) {
     const hash = await bcrypt.hash(password, saltOrRounds);
     return hash
 }
+
+
+// compare password
+export async function comparePassword(plaintextPassword, passwordHash) {
+    const result = await bcrypt.compare(plaintextPassword, passwordHash);
+    return result;
+}

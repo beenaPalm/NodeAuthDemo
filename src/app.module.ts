@@ -3,8 +3,6 @@ import { UsersModule } from './users/users.module';
 import { LoggerMiddleware } from './logger/logger.middleware';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseService } from './database/database.service';
-
 
 @Module({
   imports: [

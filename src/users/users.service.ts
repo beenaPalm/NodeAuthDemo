@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from 'src/database/database.service';
-import { getSecurePassword, StatusCode, TableName } from 'src/constants/app.constants';
+import { DatabaseService } from '../../src/database/database.service';
+import { comparePassword, getSecurePassword, StatusCode, TableName } from '../../src/constants/app.constants';
 import { LoginUsersDto } from './dtos/login_users.dto';
 import { QueryRunner } from 'typeorm';
 import { UsersQueries } from './users.queries';
@@ -8,7 +8,6 @@ import { AppResponseDto } from '../constants/response.dto';
 import { AppMessages } from '../constants/app.messages';
 
 import { CreateUsersDto } from './dtos/create_users.dto';
-
 
 
 @Injectable()
@@ -64,14 +63,12 @@ export class UsersService {
             if (deviceId == 0) {
                 let resDevice = await this.databaseService.queryInsert(queryRunner, TableName.Table_Devices_Info,
                     keysDevice.join(','), valueDevice.join(','))
-                deviceId = res.insertId
+                deviceId = resDevice.insertId
             }
 
             await this.userQueries.queryUserSessionUpdate(queryRunner, createUsersDto, res.insertId, deviceId)
 
-            return new AppResponseDto(StatusCode.Status_Show_Error,
-                AppMessages.Msg_Err_Try_Again,
-                null)
+
             await this.databaseService.queryCommitTransaction(queryRunner)
 
             let queryString = {}
@@ -125,19 +122,26 @@ export class UsersService {
 
         let password = await getSecurePassword(loginUser.password)
 
-        loginUser.password = password
         let res = await this.userQueries.queryLoginInfoCheck(loginUser)
-
         if (res && res.length > 0) {
-            return new AppResponseDto(StatusCode.Status_Success,
-                AppMessages.Msg_Succ_Login,
-                res)
-
+            let passwordCheck = await comparePassword(loginUser.password, res[0].password)
+            if (passwordCheck) {
+                delete res[0].password
+                return new AppResponseDto(StatusCode.Status_Success,
+                    AppMessages.Msg_Succ_Login,
+                    [])
+            }
+            else {
+                return new AppResponseDto(StatusCode.Status_Show_Error,
+                    AppMessages.Msg_Err_Login,
+                    [])
+            }
         }
+
         else {
             return new AppResponseDto(StatusCode.Status_Show_Error,
-                AppMessages.Msg_Err_Login,
-                res)
+                AppMessages.Msg_Err_Login_User_Not_Registered,
+                [])
 
         }
 

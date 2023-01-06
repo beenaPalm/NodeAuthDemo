@@ -4,8 +4,8 @@ import * as bcrypt from 'bcrypt';
 export enum AppMessages {
     ///******************** User ******************/
 
-
     Msg_Err_Login = "Invalid/Email address or password!!",
+    Msg_Err_Login_User_Not_Registered = "User is not registered with provided email address!!",
     Msg_Err_Reg_Email_Already_Registerd = "Please try with other email address. This is already registered!!",
     Msg_Err_Try_Again = "Please try again!!",
 
