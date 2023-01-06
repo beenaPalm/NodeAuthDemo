@@ -8,6 +8,7 @@ import { AppResponseDto } from '../constants/response.dto';
 import { AppMessages } from '../constants/app.messages';
 
 import { CreateUsersDto } from './dtos/create_users.dto';
+import { Users } from './entities/user.entities';
 
 
 @Injectable()
@@ -30,19 +31,12 @@ export class UsersService {
         let keysPassword = ['password']
         let valuePassword = [hashPassword]
 
-        let keysDevice = ['device_uniqueid', 'device_type', 'device_os_version', 'device_company']
-        let valueDevice = [createUsersDto.device_uniqueid,
-        createUsersDto.device_type,
-        createUsersDto.device_os_version,
-        createUsersDto.device_company]
-        valueDevice = valueDevice.map(i => "'" + i + "'");
-
-        let emailRegistered: Boolean = await this.userQueries.queryUserEMailCheck(createUsersDto.email)
+        let emailRegistered: Boolean = await this.userQueries.queryUserEmailCheck(createUsersDto.email)
         if (emailRegistered) {
 
             return new AppResponseDto(StatusCode.Status_Show_Error,
                 AppMessages.Msg_Err_Reg_Email_Already_Registerd,
-                null)
+                [])
         }
         let queryRunner: QueryRunner = await this.databaseService.queryStartTrasaction()
 
@@ -59,14 +53,10 @@ export class UsersService {
                 keysPassword.join(','), valuePassword.join(','))
 
 
-            var deviceId = await this.userQueries.queryUserDeviceCheck(queryRunner, createUsersDto)
-            if (deviceId == 0) {
-                let resDevice = await this.databaseService.queryInsert(queryRunner, TableName.Table_Devices_Info,
-                    keysDevice.join(','), valueDevice.join(','))
-                deviceId = resDevice.insertId
-            }
-
-            await this.userQueries.queryUserSessionUpdate(queryRunner, createUsersDto, res.insertId, deviceId)
+            //Update device info of new login for multiple device handling purpose
+            await this.updateDeviceSpecificUserInformation(queryRunner,
+                createUsersDto.device_uniqueid, createUsersDto.device_type, createUsersDto.device_os_version,
+                createUsersDto.device_company, res.insertId)
 
 
             await this.databaseService.queryCommitTransaction(queryRunner)
@@ -76,11 +66,11 @@ export class UsersService {
             let userInfo = await this.userQueries.querySelectSingleRow(TableName.Table_Users,
                 queryString)
 
+            let arrayResponse: Users[] = <Users[]>JSON.parse(userInfo)
 
             return new AppResponseDto(StatusCode.Status_Success,
                 AppMessages.Msg_Succ_Regsiter,
-                userInfo)
-
+                arrayResponse)
 
         } catch (err) {
             // if we have errors, rollback changes we made
@@ -93,7 +83,7 @@ export class UsersService {
 
         return new AppResponseDto(StatusCode.Status_Show_Error,
             AppMessages.Msg_Err_Try_Again,
-            null)
+            [])
 
     }
     async getAllUsers() {
@@ -119,19 +109,25 @@ export class UsersService {
     }
 
     async loginUser(loginUser: LoginUsersDto) {
+        const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
 
-        let password = await getSecurePassword(loginUser.password)
-
-        let res = await this.userQueries.queryLoginInfoCheck(loginUser)
+        let res = await this.userQueries.queryLoginInfoCheck(queryRunner, loginUser)
         if (res && res.length > 0) {
             let passwordCheck = await comparePassword(loginUser.password, res[0].password)
             if (passwordCheck) {
                 delete res[0].password
+
+                //Update device info of new login for multiple device handling purpose
+                await this.updateDeviceSpecificUserInformation(queryRunner,
+                    loginUser.device_uniqueid, loginUser.device_type, loginUser.device_os_version,
+                    loginUser.device_company, res[0].id_users)
+                await this.databaseService.queryReleaseQueryRunner(queryRunner)
                 return new AppResponseDto(StatusCode.Status_Success,
                     AppMessages.Msg_Succ_Login,
-                    [])
+                    res)
             }
             else {
+                await this.databaseService.queryReleaseQueryRunner(queryRunner)
                 return new AppResponseDto(StatusCode.Status_Show_Error,
                     AppMessages.Msg_Err_Login,
                     [])
@@ -139,6 +135,7 @@ export class UsersService {
         }
 
         else {
+            await this.databaseService.queryReleaseQueryRunner(queryRunner)
             return new AppResponseDto(StatusCode.Status_Show_Error,
                 AppMessages.Msg_Err_Login_User_Not_Registered,
                 [])
@@ -147,5 +144,33 @@ export class UsersService {
 
 
     }
+
+    async updateDeviceSpecificUserInformation(queryRunner: QueryRunner,
+        deviceUniqueid: string, deviceType: string, deviceOsVersion: string,
+        deviceCompany: string, userId: Number) {
+
+        //Update device info of new login for multiple device handling purpose
+        var deviceId = await this.userQueries.queryUserDeviceCheck(queryRunner,
+            deviceUniqueid, deviceType, deviceOsVersion,
+            deviceCompany)
+
+        if (deviceId == 0) {
+
+            let keysDevice = ['device_uniqueid', 'device_type', 'device_os_version', 'device_company']
+            let valueDevice = [deviceUniqueid,
+                deviceType,
+                deviceOsVersion,
+                deviceCompany]
+            valueDevice = valueDevice.map(i => "'" + i + "'");
+
+            let resDevice = await this.databaseService.queryInsert(queryRunner, TableName.Table_Devices_Info,
+                keysDevice.join(','), valueDevice.join(','))
+            deviceId = resDevice.insertId
+        }
+
+        await this.userQueries.queryUserSessionUpdate(queryRunner, userId, deviceId)
+
+    }
+
 }
 

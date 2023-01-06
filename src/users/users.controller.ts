@@ -3,17 +3,26 @@ import { LoginUsersDto } from './dtos/login_users.dto';
 import { CreateUsersDto } from './dtos/create_users.dto';
 
 import { UsersService } from './users.service';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AppResponseDto } from '../../src/constants/response.dto';
+import { AppMessages } from 'src/constants/app.messages';
+import { StatusCode } from '../../src/constants/app.constants';
+import { Users } from './entities/user.entities';
 
+
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
 
     constructor(private userService: UsersService) { }
 
 
-
+    // : Promise<AppResponseDto<Users>>
     @Post()
     @HttpCode(200)
-    create(@Body() createUserDto: CreateUsersDto) {
+    @ApiOperation({ summary: 'Register new user to app' })
+    @ApiResponse({ status: 403, description: 'Forbidden.' })
+    async create(@Body() createUserDto: CreateUsersDto): Promise<AppResponseDto<Users>> {
         return this.userService.createUser(createUserDto)
     }
 

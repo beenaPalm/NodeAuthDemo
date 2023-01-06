@@ -19,10 +19,12 @@ export class DatabaseService {
 
     async queryCommitTransaction(queryRunner: QueryRunner) {
         await queryRunner.commitTransaction()
+        await queryRunner.release()
     }
 
     async queryRollBackTransaction(queryRunner: QueryRunner) {
         await queryRunner.rollbackTransaction()
+        await queryRunner.release()
     }
 
     async queryGetQueryRunner() {

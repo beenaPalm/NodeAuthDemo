@@ -36,13 +36,14 @@ export class UsersQueries {
         return result
     }
 
-    async queryLoginInfoCheck(loginUser: LoginUsersDto) {
+    async queryLoginInfoCheck(queryRunner: QueryRunner, loginUser: LoginUsersDto) {
 
 
-        const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
         let passQuery = "SELECT u.*,p.password FROM " + TableName.Table_Users + " u  LEFT JOIN "
-            + TableName.Table_Passport + " p ON p.id_users = p.id_users AND p.login_type ='" +
+            + TableName.Table_Passport + " p ON p.id_users = u.id_users AND p.login_type ='" +
             loginUser.login_type + "'  WHERE u.email='" + loginUser.email + "'";
+
+        console.log(passQuery);
 
         try {
             const result = await queryRunner.query(passQuery);
@@ -56,7 +57,7 @@ export class UsersQueries {
     };
 
 
-    async queryUserEMailCheck(email: string) {
+    async queryUserEmailCheck(email: string) {
         const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
         let passQuery = "SELECT COUNT(id_users) as email_count FROM " + TableName.Table_Users + " WHERE email='" + email + "'";
         const result = await queryRunner.query(passQuery);
@@ -66,16 +67,16 @@ export class UsersQueries {
     };
 
 
-    async queryUserDeviceCheck(queryRunner: QueryRunner, userDto: CreateUsersDto) {
+    async queryUserDeviceCheck(queryRunner: QueryRunner, deviceUniqueid: string,
+        deviceType: string, deviceOsVersion: string, deviceCompany: string) {
 
         let passQuery = "SELECT id_devices FROM " + TableName.Table_Devices_Info +
-            " WHERE device_uniqueid='" + userDto.device_uniqueid + "' AND " +
-            "device_type='" + userDto.device_type + "' AND " +
-            "device_os_version='" + userDto.device_os_version + "' AND " +
-            "device_company='" + userDto.device_company + "'";
+            " WHERE device_uniqueid='" + deviceUniqueid + "' AND " +
+            "device_type='" + deviceType + "' AND " +
+            "device_os_version='" + deviceOsVersion + "' AND " +
+            "device_company='" + deviceCompany + "'";
         const result = await queryRunner.query(passQuery);
         return (result && result.length > 0) ? result[0].id_devices : 0
-
 
     };
 
@@ -91,7 +92,7 @@ export class UsersQueries {
 
     };
 
-    async queryUserSessionUpdate(queryRunner: QueryRunner, userObj: CreateUsersDto, userId: Number, deviceId: Number) {
+    async queryUserSessionUpdate(queryRunner: QueryRunner, userId: Number, deviceId: Number) {
 
         let refresh_token = (Math.random() + 1).toString(36).substring(7);
 
@@ -102,10 +103,8 @@ export class UsersQueries {
         let queryInsert = "INSERT INTO " + TableName.Table_User_Session + " (" + keysDevice.join(',') + ") VALUES (" +
             valueDevice.join(',')
             + ")  ON DUPLICATE KEY UPDATE  refresh_token='" + refresh_token + "'"
-        console.log(queryInsert);
 
         const result = await queryRunner.query(queryInsert);
-        console.log(result);
 
         return result
 
