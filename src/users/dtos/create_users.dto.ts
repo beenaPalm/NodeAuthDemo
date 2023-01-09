@@ -48,4 +48,8 @@ export class CreateUsersDto {
     @ApiProperty({ example: 'Samsung', description: 'Device company name' })
     device_company: string = "";
 
+    @IsString()
+    @ApiProperty({ example: 'sajidsfisd2323434', description: 'Device serial no' })
+    serial_no: string = "";
+
 }

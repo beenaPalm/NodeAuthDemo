@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { TableName } from '../../src/constants/app.constants';
+import { generateRefreshToken, TableName } from '../../src/constants/app.constants';
 import { DatabaseService } from '../../src/database/database.service';
 import { QueryRunner } from 'typeorm';
 import { LoginUsersDto } from '../users/dtos/login_users.dto';
@@ -91,15 +91,16 @@ export class UsersQueries {
 
     };
 
-    async queryUserSessionUpdate(queryRunner: QueryRunner, refreshToken: string, accessToken: string, userId: Number, deviceId: Number) {
+    async queryUserSessionUpdate(queryRunner: QueryRunner, refreshToken: string, accessToken: string, userId: Number,
+        deviceId: Number, serialNo: string) {
 
-        let keysDevice = ['id_users', 'id_devices', 'refresh_token', 'access_token']
-        let valueDevice = [userId, deviceId, refreshToken, accessToken]
+        let keysDevice = ['id_users', 'id_devices', 'serial_no', 'refresh_token', 'access_token']
+        let valueDevice = [userId, deviceId, serialNo, refreshToken, accessToken]
         valueDevice = valueDevice.map(i => "'" + i + "'");
 
         let queryInsert = "INSERT INTO " + TableName.Table_User_Session + " (" + keysDevice.join(',') + ") VALUES (" +
             valueDevice.join(',')
-            + ")  ON DUPLICATE KEY UPDATE  refresh_token='" + refreshToken + "' , access_token='" + accessToken + "'"
+            + ")  ON DUPLICATE KEY UPDATE serial_no='" + serialNo + "',  refresh_token='" + refreshToken + "' , access_token='" + accessToken + "'"
 
         const result = await queryRunner.query(queryInsert);
 
@@ -124,6 +125,27 @@ export class UsersQueries {
     };
 
 
+    async queryAddVerificationCode(queryRunner: QueryRunner, email: string) {
+
+        let verificationCode: string = await generateRefreshToken(6);
+        let currentDate = new Date(Date() + (20 * 60000));
+
+
+        let keysDevice = ['email', 'verification_code', 'expired_time', 'total_verification']
+        let valueDevice = [email, verificationCode, currentDate, 1]
+        valueDevice = valueDevice.map(i => "'" + i + "'");
+
+        let queryInsert = "INSERT INTO " + TableName.Table_Otp_Verification + " (" + keysDevice.join(',') + ") VALUES (" +
+            valueDevice.join(',')
+            + ")  ON DUPLICATE KEY UPDATE  verification_code='" + verificationCode +
+            "expired_time='" + currentDate + "' , total_verification=total_verification+1"
+
+        const result = await queryRunner.query(queryInsert);
+
+        return result
+
+
+    };
 
 }
 

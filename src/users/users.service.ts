@@ -1,3 +1,5 @@
+import { Response } from 'express';
+import { ForgotPassDto } from './dtos/forgot_pass.dto';
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../src/database/database.service';
 import { comparePassword, generateRefreshToken, getSecurePassword, StatusCode, TableName } from '../../src/constants/app.constants';
@@ -6,15 +8,16 @@ import { QueryRunner } from 'typeorm';
 import { UsersQueries } from './users.queries';
 import { AppResponseDto } from '../constants/response.dto';
 import { AppMessages } from '../constants/app.messages';
-
 import { CreateUsersDto } from './dtos/create_users.dto';
 import { Users } from './entities/user.entities';
+import { AuthService } from '../../src/auth/auth.service';
 
 
 @Injectable()
 export class UsersService {
 
-    constructor(private userQueries: UsersQueries, private databaseService: DatabaseService) { }
+    constructor(private userQueries: UsersQueries, private databaseService: DatabaseService,
+        private authService: AuthService) { }
 
     async createUser(createUsersDto: CreateUsersDto) {
         let keysUser = ['email', 'user_name', 'date_of_birth']
@@ -22,7 +25,6 @@ export class UsersService {
         createUsersDto.user_name,
         createUsersDto.date_of_birth]
         valueUser = valueUser.map(i => "'" + i + "'");
-
 
         const hashPassword = await getSecurePassword(createUsersDto.password)
 
@@ -54,7 +56,7 @@ export class UsersService {
             //Update device info of new login for multiple device handling purpose
             let responseToken = await this.updateDeviceSpecificUserInformation(queryRunner,
                 createUsersDto.device_uniqueid, createUsersDto.device_type, createUsersDto.device_os_version,
-                createUsersDto.device_company, res.insertId)
+                createUsersDto.device_company, createUsersDto.serial_no, res.insertId)
 
 
             await this.databaseService.queryCommitTransaction(queryRunner)
@@ -120,7 +122,7 @@ export class UsersService {
                 //Update device info of new login for multiple device handling purpose
                 let responseToken = await this.updateDeviceSpecificUserInformation(queryRunner,
                     loginUser.device_uniqueid, loginUser.device_type, loginUser.device_os_version,
-                    loginUser.device_company, res[0].id_users)
+                    loginUser.device_company, loginUser.serial_no, res[0].id_users)
                 await this.databaseService.queryReleaseQueryRunner(queryRunner)
 
 
@@ -140,7 +142,6 @@ export class UsersService {
                     [])
             }
         }
-
         else {
             await this.databaseService.queryReleaseQueryRunner(queryRunner)
             return new AppResponseDto(StatusCode.Status_Show_Error,
@@ -150,9 +151,16 @@ export class UsersService {
         }
     }
 
+    async forgotPassword(forgotPass: ForgotPassDto) {
+
+        let queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
+        let res = await this.userQueries.queryAddVerificationCode(queryRunner, forgotPass.email)
+
+    }
+
     async updateDeviceSpecificUserInformation(queryRunner: QueryRunner,
         deviceUniqueid: string, deviceType: string, deviceOsVersion: string,
-        deviceCompany: string, userId: Number) {
+        deviceCompany: string, serialNo: string, userId: Number) {
 
         //Update device info of new login for multiple device handling purpose
         var deviceId = await this.userQueries.queryUserDeviceCheck(queryRunner,
@@ -173,10 +181,23 @@ export class UsersService {
             deviceId = resDevice.insertId
         }
 
-        let refreshToken: string = await generateRefreshToken(10);
-        let accessToken: string = await generateRefreshToken(25);
+        var jsonPayload = {}
+        jsonPayload['userId'] = userId
+        jsonPayload['deviceId'] = deviceId
+        jsonPayload['serialNo'] = serialNo
+        jsonPayload['exp'] = (new Date().getTime()) + (30 * 60 * 1000);
+        jsonPayload['aud'] = "localhost"
+        jsonPayload['iss'] = "localhost"
 
-        await this.userQueries.queryUserSessionUpdate(queryRunner, refreshToken, accessToken, userId, deviceId)
+        var jsonHeader = {}
+        jsonHeader['alg'] = "HS256"
+        jsonHeader['typ'] = "JWT"
+
+        let refreshToken: string = await generateRefreshToken(10);
+        let accessToken: string = await this.authService.login(jsonPayload)
+        console.log(accessToken);
+
+        await this.userQueries.queryUserSessionUpdate(queryRunner, refreshToken, accessToken, userId, deviceId, serialNo)
         return { 'access_token': accessToken, 'refresh_token': refreshToken }
     }
 
