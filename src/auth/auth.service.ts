@@ -1,15 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-
+import * as jwt from 'jsonwebtoken'
 
 @Injectable()
 export class AuthService {
 
-    constructor(private readonly jwtService: JwtService) { }
-
     async login(payload: Object) {
 
-        return this.jwtService.sign(payload)
+        return jwt.sign(payload, `${process.env.JWT_SECRET}`,
+            { expiresIn: '2d' }
+        )
 
     }
 }

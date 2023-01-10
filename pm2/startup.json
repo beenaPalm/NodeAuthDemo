@@ -2,7 +2,7 @@
   "apps": [
     {
       "name": "Demo_API",
-      "script": "../src/main.ts",
+      "script": "src/main.ts",
       "args": "start",
       "exec_interpreter": "node",
       "node_args": [

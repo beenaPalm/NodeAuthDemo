@@ -6,9 +6,8 @@ export declare enum TableName {
     Table_Devices_Info = "devices_info",
     Table_User_Session = "user_session"
 }
-export declare enum ResponseKey {
-    Res_Status = "statusCode",
-    Res_Message = "message",
-    Res_Data = "data"
+export declare enum StatusCode {
+    Status_Success = 200,
+    Status_Show_Error = 201
 }
-export declare function formatResponse(statusCode: Number, message: string, data: Object): {};
+export declare function getSecurePassword(password: string): Promise<string>;

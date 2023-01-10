@@ -14,6 +14,9 @@ export enum TableName {
 export enum StatusCode {
     Status_Success = 200,
     Status_Show_Error = 201,
+    Status_Token_inValid = 498,
+    Status_UnAuthorized = 401,
+
 }
 
 

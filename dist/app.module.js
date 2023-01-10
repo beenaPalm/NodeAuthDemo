@@ -11,7 +11,6 @@ const common_1 = require("@nestjs/common");
 const users_module_1 = require("./users/users.module");
 const logger_middleware_1 = require("./logger/logger.middleware");
 const typeorm_1 = require("@nestjs/typeorm");
-const database_service_1 = require("./database/database.service");
 const config_1 = require("@nestjs/config");
 let AppModule = class AppModule {
     configure(consumer) {
@@ -38,7 +37,6 @@ AppModule = __decorate([
                 synchronize: true,
             }),
         ],
-        providers: [database_service_1.DatabaseService]
     })
 ], AppModule);
 exports.AppModule = AppModule;

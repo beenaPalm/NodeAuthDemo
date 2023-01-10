@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatResponse = exports.ResponseKey = exports.TableName = void 0;
+exports.getSecurePassword = exports.StatusCode = exports.TableName = void 0;
+const bcrypt = require("bcrypt");
 var TableName;
 (function (TableName) {
     TableName["Table_Users"] = "users";
@@ -10,18 +11,15 @@ var TableName;
     TableName["Table_Devices_Info"] = "devices_info";
     TableName["Table_User_Session"] = "user_session";
 })(TableName = exports.TableName || (exports.TableName = {}));
-var ResponseKey;
-(function (ResponseKey) {
-    ResponseKey["Res_Status"] = "statusCode";
-    ResponseKey["Res_Message"] = "message";
-    ResponseKey["Res_Data"] = "data";
-})(ResponseKey = exports.ResponseKey || (exports.ResponseKey = {}));
-function formatResponse(statusCode, message, data) {
-    let response = {};
-    response[ResponseKey.Res_Status] = statusCode;
-    response[ResponseKey.Res_Message] = message;
-    response[ResponseKey.Res_Data] = data;
-    return response;
+var StatusCode;
+(function (StatusCode) {
+    StatusCode[StatusCode["Status_Success"] = 200] = "Status_Success";
+    StatusCode[StatusCode["Status_Show_Error"] = 201] = "Status_Show_Error";
+})(StatusCode = exports.StatusCode || (exports.StatusCode = {}));
+async function getSecurePassword(password) {
+    const saltOrRounds = 10;
+    const hash = await bcrypt.hash(password, saltOrRounds);
+    return hash;
 }
-exports.formatResponse = formatResponse;
+exports.getSecurePassword = getSecurePassword;
 //# sourceMappingURL=app.constants.js.map

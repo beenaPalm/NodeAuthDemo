@@ -16,33 +16,6 @@ let DatabaseService = class DatabaseService {
     constructor(dataSource) {
         this.dataSource = dataSource;
     }
-    async querySelectAll(tableName) {
-        const queryRunner = this.dataSource.createQueryRunner();
-        await queryRunner.connect();
-        const result = await queryRunner.query("SELECT * FROM " + tableName);
-        return result;
-    }
-    async querySelectSingleRow(tableName, queryObject) {
-        let entries = Object.entries(queryObject);
-        let queryString = entries.map(([key, val]) => {
-            return `${key} = '${val}' `;
-        });
-        let whereClause = queryString.join(' AND ');
-        const queryRunner = this.dataSource.createQueryRunner();
-        await queryRunner.connect();
-        const result = await queryRunner.query("SELECT * FROM " + tableName + " WHERE " + whereClause);
-        return result;
-    }
-    async queryInsert(queryRunner, tableName, keys, values) {
-        let queryStr = "INSERT INTO " + tableName + "(" + keys + ") values (" + values + ")";
-        try {
-            const result = await queryRunner.query(queryStr);
-            return result;
-        }
-        catch (err) {
-            return null;
-        }
-    }
     async queryStartTrasaction() {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
@@ -58,9 +31,15 @@ let DatabaseService = class DatabaseService {
     async queryGetQueryRunner() {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
+        return queryRunner;
     }
     async queryReleaseQueryRunner(queryRunner) {
         await queryRunner.release();
+    }
+    async queryInsert(queryRunner, tableName, keys, values) {
+        let queryStr = "INSERT INTO " + tableName + "(" + keys + ") values (" + values + ")";
+        const result = await queryRunner.query(queryStr);
+        return result;
     }
 };
 DatabaseService = __decorate([

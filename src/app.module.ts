@@ -6,7 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
-import { JwtService } from '@nestjs/jwt';
+import { DatabaseService } from './database/database.service';
 
 @Module({
   imports: [
@@ -26,7 +26,7 @@ import { JwtService } from '@nestjs/jwt';
     }),
     AuthModule,
   ],
-  providers: [AuthService, JwtService],
+  providers: [AuthService, DatabaseService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

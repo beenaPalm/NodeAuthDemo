@@ -185,17 +185,12 @@ export class UsersService {
         jsonPayload['userId'] = userId
         jsonPayload['deviceId'] = deviceId
         jsonPayload['serialNo'] = serialNo
-        jsonPayload['exp'] = (new Date().getTime()) + (30 * 60 * 1000);
         jsonPayload['aud'] = "localhost"
         jsonPayload['iss'] = "localhost"
 
-        var jsonHeader = {}
-        jsonHeader['alg'] = "HS256"
-        jsonHeader['typ'] = "JWT"
 
         let refreshToken: string = await generateRefreshToken(10);
         let accessToken: string = await this.authService.login(jsonPayload)
-        console.log(accessToken);
 
         await this.userQueries.queryUserSessionUpdate(queryRunner, refreshToken, accessToken, userId, deviceId, serialNo)
         return { 'access_token': accessToken, 'refresh_token': refreshToken }
