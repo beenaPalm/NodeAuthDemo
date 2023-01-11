@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { ForgotPassDto } from './dtos/forgot_pass.dto';
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../src/database/database.service';
+import { DatabaseService, TransctionBlock } from '../../src/database/database.service';
 import { comparePassword, generateRefreshToken, getSecurePassword, StatusCode, TableName } from '../../src/constants/app.constants';
 import { LoginUsersDto } from './dtos/login_users.dto';
 import { QueryRunner } from 'typeorm';
@@ -11,13 +11,15 @@ import { AppMessages } from '../constants/app.messages';
 import { CreateUsersDto } from './dtos/create_users.dto';
 import { Users } from './entities/user.entities';
 import { AuthService } from '../../src/auth/auth.service';
+import { MailService } from '../../src/mail/mail.service';
 
 
 @Injectable()
 export class UsersService {
 
     constructor(private userQueries: UsersQueries, private databaseService: DatabaseService,
-        private authService: AuthService) { }
+        private authService: AuthService, private mailService: MailService
+    ) { }
 
     async createUser(createUsersDto: CreateUsersDto) {
         let keysUser = ['email', 'user_name', 'date_of_birth']
@@ -85,13 +87,13 @@ export class UsersService {
 
         return new AppResponseDto(StatusCode.Status_Show_Error,
             AppMessages.Msg_Err_Try_Again,
-            [])
+            null)
 
     }
     async getAllUsers() {
 
-        let res = await this.userQueries.querySelectAll(TableName.Table_Users)
-
+        // let res = await this.userQueries.querySelectAll(TableName.Table_Users)
+        let res = await this.databaseService.findAll(this.userQueries.findAll())
 
         return new AppResponseDto(StatusCode.Status_Success,
             AppMessages.Msg_Succ_Users,
@@ -153,10 +155,46 @@ export class UsersService {
 
     async forgotPassword(forgotPass: ForgotPassDto) {
 
-        let queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
-        let res = await this.userQueries.queryAddVerificationCode(queryRunner, forgotPass.email)
+        let verificationCode: string = await generateRefreshToken(6);
 
+
+        let queryString = {}
+        queryString['email'] = forgotPass.email
+        let userInfo = await this.userQueries.querySelectSingleRow(TableName.Table_Users,
+            queryString)
+
+        if (userInfo && userInfo.length > 0) {
+            let responseMail = this.mailService.sendUserVerificationCode(userInfo[0], verificationCode)
+
+            if (responseMail) {
+                let queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
+                let res = await this.userQueries.queryAddVerificationCode(queryRunner, forgotPass.email, verificationCode)
+                if (res) {
+                    return new AppResponseDto(StatusCode.Status_Success,
+                        AppMessages.Msg_Succ_Forgot_pass,
+                        [])
+
+                }
+                else {
+                    return new AppResponseDto(StatusCode.Status_Show_Error,
+                        AppMessages.Msg_Err_Forgot_pass,
+                        [])
+                }
+            }
+            else {
+                return new AppResponseDto(StatusCode.Status_Show_Error,
+                    AppMessages.Msg_Err_Forgot_pass,
+                    [])
+
+            }
+        }
+        else {
+            return new AppResponseDto(StatusCode.Status_Show_Error,
+                AppMessages.Msg_Err_Login_User_Not_Registered,
+                [])
+        }
     }
+
 
     async updateDeviceSpecificUserInformation(queryRunner: QueryRunner,
         deviceUniqueid: string, deviceType: string, deviceOsVersion: string,

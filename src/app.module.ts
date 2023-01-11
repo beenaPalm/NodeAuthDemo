@@ -5,8 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import { AuthService } from './auth/auth.service';
-import { AuthModule } from './auth/auth.module';
 import { DatabaseService } from './database/database.service';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -24,8 +24,7 @@ import { DatabaseService } from './database/database.service';
       entities: [],
       synchronize: true,
     }),
-    AuthModule,
-  ],
+    MailModule],
   providers: [AuthService, DatabaseService],
 })
 export class AppModule implements NestModule {

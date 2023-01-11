@@ -4,7 +4,7 @@ import { IsArray } from "class-validator";
 
 export class AppResponseDto<T>  {
 
-    constructor(statusCode: Number, message: string, data: T[]) {
+    constructor(statusCode: Number, message: string, data: T) {
 
         this.statusCode = statusCode
         this.message = message
@@ -18,5 +18,5 @@ export class AppResponseDto<T>  {
     message: string = "";
 
     @IsArray()
-    data: T[];
+    data: T;
 }

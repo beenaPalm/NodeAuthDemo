@@ -25,9 +25,6 @@ export class AuthMiddleware implements NestMiddleware {
           let responseVerification = await jwt.verify(token, `${process.env.JWT_SECRET}`);
 
           if (responseVerification) {
-
-            console.log(responseVerification)
-
             let queryRunner = await this.databaseService.queryGetQueryRunner()
 
             const result = await queryRunner.query("SELECT access_token FROM " + TableName.Table_User_Session +

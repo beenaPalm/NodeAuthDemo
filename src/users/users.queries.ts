@@ -3,6 +3,7 @@ import { generateRefreshToken, TableName } from '../../src/constants/app.constan
 import { DatabaseService } from '../../src/database/database.service';
 import { QueryRunner } from 'typeorm';
 import { LoginUsersDto } from '../users/dtos/login_users.dto';
+import * as moment from 'moment';
 
 
 
@@ -13,12 +14,19 @@ export class UsersQueries {
 
     }
 
+    findAll(): string {
+        return `SELECT * FROM User`
+    }
+
+    findOne(id: number): string {
+        return `SELECT * FROM User where idUser = ${id}`
+    }
     async querySelectAll(tableName: string) {
 
-        const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
-        const result = await queryRunner.query("SELECT * FROM " + tableName);
-        this.databaseService.queryReleaseQueryRunner(queryRunner)
-        return result
+        // const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
+        // const result = await queryRunner.query("SELECT * FROM " + tableName);
+        // this.databaseService.queryReleaseQueryRunner(queryRunner)
+        // return result
     }
 
 
@@ -125,25 +133,26 @@ export class UsersQueries {
     };
 
 
-    async queryAddVerificationCode(queryRunner: QueryRunner, email: string) {
+    async queryAddVerificationCode(queryRunner: QueryRunner, email: string, verificationCode: string) {
 
-        let verificationCode: string = await generateRefreshToken(6);
-        let currentDate = new Date(Date() + (20 * 60000));
-
+        let currentDate = moment().format('YYYY-MM-DD HH:mm:ss');
 
         let keysDevice = ['email', 'verification_code', 'expired_time', 'total_verification']
         let valueDevice = [email, verificationCode, currentDate, 1]
         valueDevice = valueDevice.map(i => "'" + i + "'");
+        try {
+            let queryInsert = "INSERT INTO " + TableName.Table_Otp_Verification + " (" + keysDevice.join(',') + ") VALUES (" +
+                valueDevice.join(',')
+                + ")  ON DUPLICATE KEY UPDATE  verification_code='" + verificationCode +
+                "', expired_time='" + currentDate + "' , total_verification=total_verification+1"
 
-        let queryInsert = "INSERT INTO " + TableName.Table_Otp_Verification + " (" + keysDevice.join(',') + ") VALUES (" +
-            valueDevice.join(',')
-            + ")  ON DUPLICATE KEY UPDATE  verification_code='" + verificationCode +
-            "expired_time='" + currentDate + "' , total_verification=total_verification+1"
-
-        const result = await queryRunner.query(queryInsert);
-
-        return result
-
+            const result = await queryRunner.query(queryInsert);
+            console.log(result)
+            return result
+        }
+        catch (err) {
+            return null
+        }
 
     };
 

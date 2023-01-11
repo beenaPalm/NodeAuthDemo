@@ -6,6 +6,7 @@ import { UsersService } from './users.service';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppResponseDto } from '../../src/constants/response.dto';
 import { Users } from './entities/user.entities';
+import { ForgotPassDto } from './dtos/forgot_pass.dto';
 
 @ApiBearerAuth('access-token') //edit here
 @ApiTags('Users')
@@ -19,14 +20,24 @@ export class UsersController {
     @ApiResponse({ status: 403, description: 'Forbidden' })
     async create(@Body() createUserDto: CreateUsersDto): Promise<AppResponseDto<Users>> {
         try {
+
+
+
+
             let appResponse = this.userService.createUser(createUserDto)
             return appResponse
+            // PARTH :: 
+            // Service should resturn only user --
+            // Response mappding should be adjust here
+            // Post Api should return only Single object right ??
+            // so Naming should be User not Users (database name we can keep users)
+            // user.entities.ts -> user.entity.ts
         }
         catch (err) {
             return new AppResponseDto<Users>(
                 400,
                 "Server error",
-                []
+                null
             )
         }
     }
@@ -40,9 +51,8 @@ export class UsersController {
 
     @Post('/forgotPass')
     @HttpCode(200)
-    async forgotPass(@Body() loginUser: LoginUsersDto) {
-        console.log("found enauk :" + loginUser.email)
-
+    async forgotPass(@Body() forgotPass: ForgotPassDto) {
+        return this.userService.forgotPassword(forgotPass);
     }
 
 

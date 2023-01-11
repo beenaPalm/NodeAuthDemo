@@ -10,11 +10,13 @@ export enum AppMessages {
     Msg_Err_Try_Again = "Please try again!!",
     Msg_Err_No_Access = "You do not have access to this feature",
     Msg_Err_User_Not_Valid = "User is not valid!!",
-    Msg_Err_InValid_Token = "Token is not valid!!",
+    Msg_Err_Forgot_pass = "Error ocurred while sending email. Please try after some time!!",
+    Msg_Err_InValid_Token = "Invalid token!!",
 
 
     Msg_Succ_Regsiter = "Successfully registered user.",
     Msg_Succ_Login = "Successfully logged in user.",
-    Msg_Succ_Users = "Successfullt fetched users",
+    Msg_Succ_Users = "Successfully fetched users",
+    Msg_Succ_Forgot_pass = "Successfully sent verificatin code to provided email address !!",
 
 }
