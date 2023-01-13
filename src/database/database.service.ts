@@ -30,29 +30,29 @@ export class DatabaseService {
         await queryRunner.release()
     }
 
-    async queryGetQueryRunner() {
-        const queryRunner = this.dataSource.createQueryRunner();
-        await queryRunner.connect()
-        return queryRunner
-    }
+    // async queryGetQueryRunner() {
+    //     const queryRunner = this.dataSource.createQueryRunner();
+    //     await queryRunner.connect()
+    //     return queryRunner
+    // }
 
-    async queryReleaseQueryRunner(queryRunner: QueryRunner) {
-        await queryRunner.release()
-    }
+    // async queryReleaseQueryRunner(queryRunner: QueryRunner) {
+    //     await queryRunner.release()
+    // }
 
-    async queryInsert(queryRunner: QueryRunner, tableName: string, keys: string, values: string) {
-        let queryStr = "INSERT INTO " + tableName + "(" + keys + ") values (" + values + ")";
-        const result = await queryRunner.query(queryStr);
-        return result
+    // async queryInsert(queryRunner: QueryRunner, tableName: string, keys: string, values: string) {
+    //     let queryStr = "INSERT INTO " + tableName + "(" + keys + ") values (" + values + ")";
+    //     const result = await queryRunner.query(queryStr);
+    //     return result
 
-    }
+    // }
 
-    async executeQuery(queryStr: string, []) {
+    async executeQuery(queryStr: string, queryParams?: any[]) {
         let queryRunner = undefined;
         try {
             queryRunner = this.dataSource.createQueryRunner();
             await queryRunner.connect()
-            const result = await queryRunner.query(queryStr);
+            const result = await queryRunner.query(queryStr, queryParams);
             await queryRunner.release()
             return result
         } catch (error) {
@@ -79,12 +79,12 @@ export class DatabaseService {
             }
         }
     }
-    async findOne(queryStr: string, []) {
+    async findOne(queryStr: string, queryParams?: any[]) {
         let queryRunner = undefined;
         try {
             queryRunner = this.dataSource.createQueryRunner();
             await queryRunner.connect()
-            const result = await queryRunner.query(queryStr);
+            const result = await queryRunner.query(queryStr, queryParams);
             await queryRunner.release()
             return result ? result[0] : null
         } catch (error) {

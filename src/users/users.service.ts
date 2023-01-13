@@ -92,37 +92,26 @@ export class UsersService {
     }
     async getAllUsers() {
 
-        // let res = await this.userQueries.querySelectAll(TableName.Table_Users)
-        let res = await this.databaseService.findAll(this.userQueries.findAll())
+        return await this.databaseService.findAll(this.userQueries.findAll())
 
-        return new AppResponseDto(StatusCode.Status_Success,
-            AppMessages.Msg_Succ_Users,
-            res)
     }
 
-    async getUserInfo(userId: Number) {
+    async getUserInfo(userId: number) {
 
-        var queryString = {}
-        queryString['id_users'] = userId
-
-        let res = await this.userQueries.querySelectSingleRow(TableName.Table_Users, queryString)
-        return new AppResponseDto(StatusCode.Status_Success,
-            AppMessages.Msg_Succ_Users,
-            res)
+        return await this.databaseService.findOne(this.userQueries.findOne(userId))
 
     }
 
     async loginUser(loginUser: LoginUsersDto) {
-        const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
-
-        let res = await this.userQueries.queryLoginInfoCheck(queryRunner, loginUser)
-        if (res && res.length > 0) {
-            let passwordCheck = await comparePassword(loginUser.password, res[0].password)
+        let loginRes = await this.databaseService.findOne(this.userQueries.findUserLoggedIn(),
+            [loginUser.login_type, loginUser.email])
+        if (loginRes) {
+            let passwordCheck = await comparePassword(loginUser.password, loginRes.password)
             if (passwordCheck) {
-                delete res[0].password
+                delete loginRes.password
 
                 //Update device info of new login for multiple device handling purpose
-                let responseToken = await this.updateDeviceSpecificUserInformation(queryRunner,
+                let responseToken = await this.updateDeviceSpecificUserInformation(
                     loginUser.device_uniqueid, loginUser.device_type, loginUser.device_os_version,
                     loginUser.device_company, loginUser.serial_no, res[0].id_users)
                 await this.databaseService.queryReleaseQueryRunner(queryRunner)
@@ -196,27 +185,30 @@ export class UsersService {
     }
 
 
-    async updateDeviceSpecificUserInformation(queryRunner: QueryRunner,
-        deviceUniqueid: string, deviceType: string, deviceOsVersion: string,
+    async updateDeviceSpecificUserInformation(deviceUniqueid: string, deviceType: string, deviceOsVersion: string,
         deviceCompany: string, serialNo: string, userId: Number) {
 
         //Update device info of new login for multiple device handling purpose
-        var deviceId = await this.userQueries.queryUserDeviceCheck(queryRunner,
-            deviceUniqueid, deviceType, deviceOsVersion,
-            deviceCompany)
 
-        if (deviceId == 0) {
+        var deviceInfo = await this.databaseService.findOne(this.userQueries.checkUserDevice(),
+            [deviceUniqueid, deviceType, deviceOsVersion,
+                deviceCompany])
+
+
+        if (deviceInfo && deviceInfo.id_devices == 0) {
 
             let keysDevice = ['device_uniqueid', 'device_type', 'device_os_version', 'device_company']
             let valueDevice = [deviceUniqueid,
                 deviceType,
                 deviceOsVersion,
                 deviceCompany]
-            valueDevice = valueDevice.map(i => "'" + i + "'");
+            let valueParam = ['?',
+                '?',
+                '?',
+                '?']
+            let resDevice = await this.databaseService.executeQuery(this.userQueries.insertUser(keysDevice.join(','),
+                valueParam.join(',')), valueDevice)
 
-            let resDevice = await this.databaseService.queryInsert(queryRunner, TableName.Table_Devices_Info,
-                keysDevice.join(','), valueDevice.join(','))
-            deviceId = resDevice.insertId
         }
 
         var jsonPayload = {}

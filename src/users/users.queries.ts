@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { generateRefreshToken, TableName } from '../../src/constants/app.constants';
 import { DatabaseService } from '../../src/database/database.service';
-import { QueryRunner } from 'typeorm';
+import { InsertValuesMissingError, QueryRunner } from 'typeorm';
 import { LoginUsersDto } from '../users/dtos/login_users.dto';
 import * as moment from 'moment';
 
@@ -15,63 +15,39 @@ export class UsersQueries {
     }
 
     findAll(): string {
-        return `SELECT * FROM User`
+        return `SELECT * FROM  ${TableName.Table_Users}`
     }
 
     findOne(id: number): string {
-        return `SELECT * FROM User where idUser = ${id}`
-    }
-    async querySelectAll(tableName: string) {
-
-        // const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
-        // const result = await queryRunner.query("SELECT * FROM " + tableName);
-        // this.databaseService.queryReleaseQueryRunner(queryRunner)
-        // return result
+        return `SELECT * FROM ${TableName.Table_Users} where id_users = ${id}`
     }
 
+    findUserLoggedIn() {
 
-    async querySelectSingleRow(tableName: string, queryObject: Object) {
+        return `SELECT u.*,p.password FROM ${TableName.Table_Users} u  LEFT JOIN "
+        ${TableName.Table_Passport} " p ON p.id_users = u.id_users AND p.login_type =? 
+         WHERE u.email=? AND u.user_status=1`;
 
-        let entries = Object.entries(queryObject)
-        let queryString = entries.map(([key, val]) => {
-            return `${key} = '${val}' `;
-        });
-        let whereClause = queryString.join(' AND ')
-        const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
-        const result = await queryRunner.query("SELECT * FROM " + tableName + " WHERE " + whereClause);
-        this.databaseService.queryReleaseQueryRunner(queryRunner)
-        return result
-    }
-
-    async queryLoginInfoCheck(queryRunner: QueryRunner, loginUser: LoginUsersDto) {
-
-
-        let passQuery = "SELECT u.*,p.password FROM " + TableName.Table_Users + " u  LEFT JOIN "
-            + TableName.Table_Passport + " p ON p.id_users = u.id_users AND p.login_type ='" +
-            loginUser.login_type + "'  WHERE u.email='" + loginUser.email + "' AND u.user_status=1";
-
-        try {
-            const result = await queryRunner.query(passQuery);
-            return result
-        }
-        catch (err) {
-            if (err.code == 'ER_DUP_ENTRY') {
-
-            }
-            return []
-
-        }
     };
 
 
-    async queryUserEmailCheck(email: string) {
-        const queryRunner: QueryRunner = await this.databaseService.queryGetQueryRunner()
-        let passQuery = "SELECT COUNT(id_users) as email_count FROM " + TableName.Table_Users + " WHERE email='" + email + "'";
-        const result = await queryRunner.query(passQuery);
-        this.databaseService.queryReleaseQueryRunner(queryRunner)
-        return (result && result.length > 0 && result[0].email_count > 0) ? true : false
+    checkUserEmail() {
 
+        return `SELECT COUNT(id_users) as email_count FROM ${TableName.Table_Users} WHERE email=?`;
     };
+
+    checkUserDevice() {
+
+        return `SELECT id_devices FROM  ${TableName.Table_Devices_Info}  
+        WHERE device_uniqueid=? AND device_type=? AND device_os_version=? AND device_company=?`
+    };
+
+    insertUser(keys: string, values: string) {
+
+        return `INSERT INTO ${TableName.Table_Users} ${keys} values (${values})`;
+
+    }
+
 
 
     async queryUserDeviceCheck(queryRunner: QueryRunner, deviceUniqueid: string,
