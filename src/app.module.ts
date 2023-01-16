@@ -7,6 +7,8 @@ import { AuthMiddleware } from './middleware/auth.middleware';
 import { AuthService } from './auth/auth.service';
 import { DatabaseService } from './database/database.service';
 import { MailModule } from './mail/mail.module';
+import { AuthQueries } from './auth/auth.queries';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -24,8 +26,9 @@ import { MailModule } from './mail/mail.module';
       entities: [],
       synchronize: true,
     }),
-    MailModule],
-  providers: [AuthService, DatabaseService],
+    MailModule,
+    AuthModule],
+  providers: [AuthService, DatabaseService, AuthQueries],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

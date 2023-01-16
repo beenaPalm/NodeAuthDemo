@@ -6,9 +6,10 @@ import { UsersQueries } from './users.queries';
 import { UsersService } from './users.service';
 import { AuthService } from '../../src/auth/auth.service';
 import { MailModule } from '../../src/mail/mail.module';
+import { AuthModule } from '../../src/auth/auth.module';
 
 @Module({
-    imports: [MailModule],
+    imports: [MailModule, AuthModule],
     controllers: [UsersController],
     providers: [UsersService, UsersQueries, DatabaseService, AuthService]
 })

@@ -21,11 +21,12 @@ export class UsersController {
     async create(@Body() createUserDto: CreateUsersDto): Promise<AppResponseDto<Users>> {
         try {
 
-
-
-
-            let appResponse = this.userService.createUser(createUserDto)
-            return appResponse
+            let user = await this.userService.createUser(createUserDto)
+            return new AppResponseDto<Users>(
+                200,
+                "Server error",
+                user
+            )
             // PARTH :: 
             // Service should resturn only user --
             // Response mappding should be adjust here
@@ -34,31 +35,77 @@ export class UsersController {
             // user.entities.ts -> user.entity.ts
         }
         catch (err) {
-            return new AppResponseDto<Users>(
-                400,
-                "Server error",
-                null
-            )
+            return null
+            // return new AppResponseDto<Users>(
+            //     400,
+            //     "Server error",
+            //     null
+            // )
         }
     }
 
     @Post('/login')
     @HttpCode(200)
     async loginUser(@Body() loginUser: LoginUsersDto): Promise<AppResponseDto<Users>> {
-        return this.userService.loginUser(loginUser);
+        try {
+
+            let user = await this.userService.loginUser(loginUser)
+            return new AppResponseDto<Users>(
+                200,
+                "Server error",
+                user
+            )
+        }
+        catch (err) {
+            return null
+            // return new AppResponseDto<Users>(
+            //     400,
+            //     "Server error",
+            //     null
+            // )
+        }
 
     }
 
     @Post('/forgotPass')
     @HttpCode(200)
     async forgotPass(@Body() forgotPass: ForgotPassDto) {
-        return this.userService.forgotPassword(forgotPass);
+        try {
+            let user = await this.userService.forgotPassword(forgotPass)
+            return new AppResponseDto<Users>(
+                200,
+                "Server error",
+                user
+            )
+        }
+        catch (err) {
+            return null
+            // return new AppResponseDto<Users>(
+            //     400,
+            //     "Server error",
+            //     null
+            // )
+        }
     }
 
 
     @Get(':id')
     async findOne(@Param('id', ParseIntPipe) id: number) {
-        return this.userService.getUserInfo(id);
+        try {
+            let user = await this.userService.getUserInfo(id)
+            return new AppResponseDto<Users>(
+                200,
+                "Server error",
+                user
+            )
+        }
+        catch (err) {
+            return new AppResponseDto<Users>(
+                400,
+                "Server error",
+                null
+            )
+        }
     }
 
 

@@ -25,27 +25,6 @@ export class DatabaseService {
         await queryRunner.release()
     }
 
-    async queryRollBackTransaction(queryRunner: QueryRunner) {
-        await queryRunner.rollbackTransaction()
-        await queryRunner.release()
-    }
-
-    // async queryGetQueryRunner() {
-    //     const queryRunner = this.dataSource.createQueryRunner();
-    //     await queryRunner.connect()
-    //     return queryRunner
-    // }
-
-    // async queryReleaseQueryRunner(queryRunner: QueryRunner) {
-    //     await queryRunner.release()
-    // }
-
-    // async queryInsert(queryRunner: QueryRunner, tableName: string, keys: string, values: string) {
-    //     let queryStr = "INSERT INTO " + tableName + "(" + keys + ") values (" + values + ")";
-    //     const result = await queryRunner.query(queryStr);
-    //     return result
-
-    // }
 
     async executeQuery(queryStr: string, queryParams?: any[]) {
         let queryRunner = undefined;
@@ -80,6 +59,12 @@ export class DatabaseService {
         }
     }
     async findOne(queryStr: string, queryParams?: any[]) {
+        console.log("----------------")
+        console.log(queryStr)
+        console.log(queryParams)
+        console.log("----------------")
+
+
         let queryRunner = undefined;
         try {
             queryRunner = this.dataSource.createQueryRunner();

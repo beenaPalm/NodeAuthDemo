@@ -4,17 +4,17 @@ import { AppMessages } from '../../src/constants/app.messages';
 import { AppResponseDto } from '../../src/constants/response.dto';
 import * as jwt from 'jsonwebtoken'
 import { DatabaseService } from '../../src/database/database.service';
+import { AuthQueries } from '../../src/auth/auth.queries';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
 
-  constructor(private databaseService: DatabaseService) {
+  constructor(private databaseService: DatabaseService, private authQueries: AuthQueries) {
 
   }
 
   async use(req: any, res: any, next: () => void) {
 
-    console.log(req.headers.authorization)
     if (req.headers && req.headers.authorization) {
       const authHeader = req.headers.authorization.split(' ');
       if (authHeader && authHeader.length == 2) {
@@ -25,15 +25,12 @@ export class AuthMiddleware implements NestMiddleware {
           let responseVerification = await jwt.verify(token, `${process.env.JWT_SECRET}`);
 
           if (responseVerification) {
-            let queryRunner = await this.databaseService.queryGetQueryRunner()
-
-            const result = await queryRunner.query("SELECT access_token FROM " + TableName.Table_User_Session +
-              " WHERE id_users = " + responseVerification.userId + " AND id_devices=" + responseVerification.deviceId);
-            console.log(result)
-            await this.databaseService.queryReleaseQueryRunner(queryRunner)
-
-            if (result && result.length > 0) {
-              if (result[0].access_token == token) {
+            let result = await this.databaseService.findOne(this.authQueries.findAccessToken(), [
+              Number(responseVerification.userId),
+              Number(responseVerification.deviceId)])
+            if (result) {
+              console.log(result.access_token)
+              if (result.access_token == token) {
                 next();
               }
               else {
